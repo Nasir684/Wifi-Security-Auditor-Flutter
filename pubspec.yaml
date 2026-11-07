@@ -1,0 +1,26 @@
+name: wifi_security_auditor
+description: Ethical WiFi Security Auditor - Auto scan + Authorized test + PDF report
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: '>=3.0.0 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+  wifi_scan: ^0.4.1
+  permission_handler: ^11.3.0
+  pdf: ^3.11.1
+  path_provider: ^2.1.2
+  share_plus: ^9.0.0
+  cupertino_icons: ^1.0.2
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^3.0.0
+  flutter_launcher_icons: ^0.13.1
+
+flutter:
+  uses-material-design: true
