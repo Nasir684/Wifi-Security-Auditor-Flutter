@@ -1,7 +1,8 @@
-name: wifi_security_auditor
-description: Ethical WiFi Security Auditor - Auto scan + Authorized test + PDF report
-publish_to: 'none'
-version: 1.0.0+1
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
 
 environment:
   sdk: '>=3.0.0 <4.0.0'
