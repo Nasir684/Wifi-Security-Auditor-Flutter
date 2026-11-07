@@ -1,11 +1,23 @@
-import 'package:flutter_test/flutter_test.dart';
-import 'package:wifi_security_auditor/main.dart';
+import 'package:flutter/material.dart';
 
 void main() {
-  testWidgets('WiFiAuditorApp builds without crashing', (WidgetTester tester) async {
-    await tester.pumpWidget(const WiFiAuditorApp());
+  runApp(const WiFiAuditorApp());
+}
 
-    expect(find.byType(WiFiAuditorApp), findsOneWidget);
-    expect(find.byType(Scaffold), findsWidgets);
-  });
+class WiFiAuditorApp extends StatelessWidget {
+  const WiFiAuditorApp({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      title: 'WiFi Security Auditor',
+      theme: ThemeData(
+        colorScheme: ColorScheme.fromSeed(seedColor: Colors.blue),
+        useMaterial3: true,
+      ),
+      home: const Scaffold(
+        body: Center(child: Text('WiFi Security Auditor')),
+      ),
+    );
+  }
 }
