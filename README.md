@@ -1,3 +1,6 @@
+![WiFi Security Auditor](banner.png)
+
+# WiFi Security Auditor - Flutter
 # WiFi Security Auditor - Flutter (Ethical & Authorized)
 
 A Flutter-based WiFi security auditing tool that automatically scans nearby networks and performs **authorized** security testing.
