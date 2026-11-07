@@ -1,8 +1,7 @@
-      - name: Set up Flutter
-        uses: subosito/flutter-action@v2
-        with:
-          channel: stable
-          cache: true
+name: wifi_security_auditor
+description: A Flutter app for authorized WiFi security auditing.
+publish_to: 'none'
+version: 1.0.0+1
 
 environment:
   sdk: '>=3.0.0 <4.0.0'
@@ -10,12 +9,12 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
+  cupertino_icons: ^1.0.2
   wifi_scan: ^0.4.1
   permission_handler: ^11.3.0
   pdf: ^3.11.1
   path_provider: ^2.1.2
   share_plus: ^9.0.0
-  cupertino_icons: ^1.0.2
 
 dev_dependencies:
   flutter_test:
