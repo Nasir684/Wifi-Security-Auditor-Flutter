@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:google_mobile_ads/google_mobile_ads.dart';
 
 import '../models/wifi_network.dart';
+import '../services/admob_service.dart';
 import '../services/wifi_service.dart';
+import '../widgets/banner_ad_widget.dart';
 import 'consent_screen.dart';
 import 'report_screen.dart';
 
@@ -17,6 +20,25 @@ class _ScanScreenState extends State<ScanScreen> {
   List<WiFiNetwork> _networks = const [];
   bool _isScanning = false;
   String? _errorMessage;
+  BannerAd? _bannerAd;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadBanner();
+  }
+
+  void _loadBanner() {
+    _bannerAd = AdMobService.createBanner(
+      onLoaded: () => setState(() {}),
+    )..load();
+  }
+
+  @override
+  void dispose() {
+    _bannerAd?.dispose();
+    super.dispose();
+  }
 
   Future<void> _scanNetworks() async {
     setState(() {
@@ -144,6 +166,14 @@ class _ScanScreenState extends State<ScanScreen> {
                       ),
                     );
                   },
+                ),
+              ),
+            if (_bannerAd != null)
+              SafeArea(
+                child: SizedBox(
+                  width: _bannerAd!.size.width.toDouble(),
+                  height: _bannerAd!.size.height.toDouble(),
+                  child: AdWidget(ad: _bannerAd!),
                 ),
               ),
           ],
