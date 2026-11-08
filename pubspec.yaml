@@ -15,7 +15,6 @@ dependencies:
   pdf: ^3.11.1
   path_provider: ^2.1.2
   share_plus: ^9.0.0
-  # --- WanaLab Global Monetization - ADDED ---
   google_mobile_ads: ^5.0.0
   in_app_purchase: ^3.1.13
   shared_preferences: ^2.2.2
@@ -29,17 +28,14 @@ dev_dependencies:
 
 flutter:
   uses-material-design: true
-  assets:
-    - assets/wordlists/top10k_common_passwords.txt
-    - assets/icon/
 
 flutter_launcher_icons:
-  android: "launcher_icon"
+  android: "ic_launcher"
   ios: true
-  image_path: "assets/icon/ic_launcher.png"
+  image_path: "icon.png"
   min_sdk_android: 21
   web:
     generate: true
-    image_path: "assets/icon/ic_launcher.png"
+    image_path: "icon.png"
     background_color: "#0A0E1A"
     theme_color: "#3B82F6"
