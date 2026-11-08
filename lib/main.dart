@@ -1,8 +1,20 @@
 import 'package:flutter/material.dart';
+import 'package:google_mobile_ads/google_mobile_ads.dart';
+import 'package:permission_handler/permission_handler.dart';
 import 'screens/scan_screen.dart';
 
-void main() {
+void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  
+  // REQUIRED for AdMob - this was missing
+  await MobileAds.instance.initialize();
+  
+  // REQUIRED for Android 13+ WiFi scan
+  await [
+    Permission.location,
+    Permission.nearbyWifiDevices,
+  ].request();
+
   runApp(const WiFiAuditorApp());
 }
 
@@ -12,7 +24,7 @@ class WiFiAuditorApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'WiFi Security Auditor',
+      title: 'WanaLab WiFi Scanner',
       debugShowCheckedModeBanner: false,
       themeMode: ThemeMode.dark,
       darkTheme: ThemeData(
