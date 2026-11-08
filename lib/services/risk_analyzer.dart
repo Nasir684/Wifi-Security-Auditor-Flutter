@@ -1,4 +1,5 @@
 import '../models/wifi_network.dart';
+import 'password_service.dart';
 
 class RiskAnalysisResult {
   final RiskLevel riskLevel;
@@ -36,15 +37,15 @@ class RiskAnalyzer {
       recommendation = 'CRITICAL: WEP is broken. Upgrade to WPA2/WPA3 immediately.';
     }
 
-    // HIGH: WPS - Play Store safe wording
+    // HIGH: WPS - Play Store safe wording (don't say hack)
     if (capsUpper.contains('WPS')) {
       risks.add('WPS Setting Detected - Vulnerable to brute force');
       if (level.index < RiskLevel.high.index) level = RiskLevel.high;
       recommendation = 'HIGH: Disable WPS in router settings. Use WPA2/WPA3 with strong password.';
     }
 
-    // MEDIUM: Default SSID
-    const defaultSSIDs = ['tplink', 'dlink', 'ptcl', 'ptcl-bb', 'default', 'netgear', 'linksys', 'admin', 'huawei', 'zte'];
+    // MEDIUM: Default SSID - Technician gold
+    const defaultSSIDs = ['tplink', 'dlink', 'ptcl', 'ptcl-bb', 'default', 'netgear', 'linksys', 'admin', 'huawei', 'zte', 'fiber', 'wanalab'];
     for (var def in defaultSSIDs) {
       if (ssidLower.contains(def)) {
         risks.add('Default SSID Detected - Indicates router not configured');
@@ -80,30 +81,43 @@ class RiskAnalyzer {
     );
   }
 
-  // Phase 2: Local weak password check (ethical - only for own network)
-  Map<String, dynamic> checkWeakPassword(String password) {
+  // --- UPDATED: Now uses 10k offline list via PasswordService ---
+  // Old hardcoded 15 passwords -> Now 10k list, 100% offline
+  Future<Map<String, dynamic>> checkWeakPassword(String password) async {
+    // Use new global service (10k list)
+    final result = await PasswordService.checkOwnPasswordStrength(password);
+    
+    return {
+      'isWeak': result.level == 'WEAK' || result.isInWeakList,
+      'strength': result.score ~/ 20, // 0-5 scale for old UI compatibility
+      'score': result.score, // 0-100 for new UI
+      'level': result.level,
+      'crackTime': result.crackTime,
+      'isInWeakList': result.isInWeakList,
+      'recommendations': result.recommendations,
+      'message': result.isInWeakList
+          ? '⚠️ Weak password found in common list (10k). Change immediately. Est: ${result.crackTime}'
+          : 'Strength: ${result.level} (${result.score}/100) - Est crack time: ${result.crackTime}',
+    };
+  }
+
+  // Legacy sync version for screens that haven't migrated yet
+  Map<String, dynamic> checkWeakPasswordSync(String password) {
     const weakPasswords = [
       '12345678', 'password', '123456789', 'admin', 'admin123',
       '123456', 'qwerty', 'letmein', 'ptcl', '1234', '00000000',
       'password123', 'admin@123', 'wifi123', '123123123'
     ];
-
     bool isWeak = weakPasswords.contains(password.toLowerCase()) || password.length < 8;
     int strength = 0;
-    
-    if (password.length >= 12) strength += 2;
-    else if (password.length >= 8) strength += 1;
-    
+    if (password.length >= 12) strength += 2; else if (password.length >= 8) strength += 1;
     if (RegExp(r'[A-Z]').hasMatch(password)) strength += 1;
     if (RegExp(r'[0-9]').hasMatch(password)) strength += 1;
     if (RegExp(r'[!@#\$%^&*]').hasMatch(password)) strength += 1;
-
     return {
       'isWeak': isWeak || strength < 3,
       'strength': strength,
-      'message': isWeak 
-          ? 'Weak password found in common weak list. Change immediately.' 
-          : 'Password not in weak list. Strength score: $strength/5',
+      'message': isWeak ? 'Weak password in common list. Change immediately.' : 'Password not in weak list. Strength: $strength/5',
     };
   }
 }
