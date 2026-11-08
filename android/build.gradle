@@ -3,3 +3,5 @@ plugins {
     id "org.jetbrains.kotlin.android" version "1.9.23" apply false
     id "dev.flutter.flutter-plugin-loader" version "1.0.0" apply false
 }
+
+include ":app"
