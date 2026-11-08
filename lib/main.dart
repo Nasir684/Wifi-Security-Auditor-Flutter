@@ -1,18 +1,12 @@
-import 'package:permission_handler/permission_handler.dart';
 import 'package:flutter/material.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
-import 'package:permission_handler/permission_handler.dart';
 import 'screens/scan_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   
-  // For google_mobile_ads 9.2.0
+  // Only AdMob here - permission must be in ScanScreen
   await MobileAds.instance.initialize();
-
-  // For wifi_scan on Android 13+
-  await Permission.location.request();
-  await Permission.nearbyWifiDevices.request();
 
   runApp(const WiFiAuditorApp());
 }
