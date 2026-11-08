@@ -8,12 +8,23 @@ class WiFiService {
   final RiskAnalyzer _analyzer = RiskAnalyzer();
 
   Future<bool> requestPermissions() async {
-    var status = await Permission.location.request();
-    return status.isGranted;
+    // FIX: Android 13+ needs BOTH permissions
+    final location = await Permission.location.request();
+    final nearby = await Permission.nearbyWifiDevices.request();
+    
+    // On Android <13, nearbyWifiDevices returns restricted but it's ok
+    if (location.isGranted) {
+      return true;
+    }
+    if (nearby.isGranted) {
+      return true;
+    }
+    return location.isGranted || nearby.isGranted;
   }
 
   Future<bool> canStartScan() async {
-    final can = await WiFiScan.instance.canStartScan();
+    // FIX: Use askPermissions true for Android 14
+    final can = await WiFiScan.instance.canStartScan(askPermissions: true);
     return can == CanStartScan.yes;
   }
 
@@ -21,22 +32,32 @@ class WiFiService {
     // Check permissions
     bool hasPerm = await requestPermissions();
     if (!hasPerm) {
-      throw Exception('Location permission required for WiFi scan - Android requires it for SSID');
+      throw Exception('Location & Nearby WiFi permission required. Enable in Settings > Apps > WanaLab > Permissions');
+    }
+
+    // Check if we can scan with permissions
+    final canScanResult = await WiFiScan.instance.canStartScan(askPermissions: true);
+    if (canScanResult != CanStartScan.yes) {
+      // Try to get detailed reason
+      final canGetResults = await WiFiScan.instance.canGetScannedResults(askPermissions: true);
+      if (canGetResults != CanGetScannedResults.yes) {
+        throw Exception('Enable Location & WiFi. Then restart app. Status: $canGetResults');
+      }
     }
 
     // Start scan
-    final canScan = await canStartScan();
-    if (!canScan) {
-      throw Exception('Cannot start scan. Enable Location & WiFi.');
-    }
-
     final result = await WiFiScan.instance.startScan();
     if (result != true) {
-      throw Exception('Scan failed. Try again.');
+      throw Exception('Scan failed. Make sure WiFi and Location are ON. Try again.');
     }
 
     // Wait 3 seconds for results
     await Future.delayed(const Duration(seconds: 3));
+
+    final canGet = await WiFiScan.instance.canGetScannedResults(askPermissions: true);
+    if (canGet != CanGetScannedResults.yes) {
+      throw Exception('Cannot get scan results: $canGet. Enable Location.');
+    }
 
     final accessPoints = await WiFiScan.instance.getScannedResults();
     
@@ -59,20 +80,11 @@ class WiFiService {
       ));
     }
 
-    // --- WanaLab Global Patch: Save ownership for consent ---
-    // Save first BSSID as owned after user confirms consent in UI
-    // This helps for future "My Network" filtering
-    if (networks.isNotEmpty) {
-      // Don't auto-save here - UI will call OwnershipService.saveOwnership(bssid)
-      // after user checks consent box. This keeps it ethical for Google review.
-    }
-
-    // Sort by signal strength - Strongest first (better UX)
+    // Sort by signal strength - Strongest first
     networks.sort((a, b) => b.signalStrength.compareTo(a.signalStrength));
     return networks;
   }
 
-  /// Call this from UI after user checks consent gate
   Future<void> confirmOwnership(String bssid) async {
     await OwnershipService.saveOwnership(bssid);
   }
