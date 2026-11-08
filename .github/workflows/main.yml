@@ -1,4 +1,4 @@
-name: WiFi Auditor Build
+name: WiFi Auditor Build - Global Monetized
 
 on:
   push:
@@ -27,20 +27,40 @@ jobs:
           channel: stable
           cache: true
 
-      - name: Generate missing Android scaffold
+      - name: Generate missing Android scaffold + Patch for AdMob & Icon
         shell: bash
         run: |
           if [[ ! -f android/gradlew || ! -f android/app/build.gradle ]]; then
-            cp android/app/src/main/AndroidManifest.xml /tmp/wifi-auditor-AndroidManifest.xml
+            cp android/app/src/main/AndroidManifest.xml /tmp/wifi-auditor-AndroidManifest.xml 2>/dev/null || echo "No manifest to backup"
             rm -rf android
-            flutter create --platforms=android --org com.example --project-name wifi_security_auditor .
-            sed 's|@mipmap/launcher_icon|@mipmap/ic_launcher|g' \
-              /tmp/wifi-auditor-AndroidManifest.xml \
-              > android/app/src/main/AndroidManifest.xml
+            flutter create --platforms=android --org com.wanalab --project-name wifi_security_auditor .
+            if [[ -f /tmp/wifi-auditor-AndroidManifest.xml ]]; then
+              sed 's|@mipmap/launcher_icon|@mipmap/ic_launcher|g' \
+                /tmp/wifi-auditor-AndroidManifest.xml \
+                > android/app/src/main/AndroidManifest.xml
+            fi
           fi
+          
+          # --- PATCH 1: Ensure AndroidManifest has AdMob App ID + Permissions ---
+          MANIFEST="android/app/src/main/AndroidManifest.xml"
+          if ! grep -q "com.google.android.gms.permission.AD_ID" "$MANIFEST"; then
+            sed -i '/<manifest/a \    <uses-permission android:name="com.google.android.gms.permission.AD_ID" />' "$MANIFEST"
+          fi
+          if ! grep -q "com.google.android.gms.ads.APPLICATION_ID" "$MANIFEST"; then
+            sed -i '/<application/a \        <meta-data android:name="com.google.android.gms.ads.APPLICATION_ID" android:value="ca-app-pub-3940256099942544~3347511713"\/>' "$MANIFEST"
+          fi
+          # Replace with your real AdMob App ID before production release
+
+          # --- PATCH 2: Ensure minSdk 21 for google_mobile_ads ---
+          sed -i 's/minSdkVersion 16/minSdkVersion 21/g' android/app/build.gradle || true
+          sed -i 's/minSdk 16/minSdk 21/g' android/app/build.gradle || true
+          sed -i 's/flutter.minSdkVersion 16/flutter.minSdkVersion 21/g' android/app/build.gradle || true
 
       - name: Get dependencies
         run: flutter pub get
+
+      - name: Generate launcher icons
+        run: flutter pub run flutter_launcher_icons
 
       - name: Analyze
         run: flutter analyze --no-fatal-infos
