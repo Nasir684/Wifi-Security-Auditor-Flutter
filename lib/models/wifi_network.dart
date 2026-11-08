@@ -34,7 +34,9 @@ class WiFiNetwork {
     if (capabilities.contains('WPA2')) return 'WPA2';
     if (capabilities.contains('WPA')) return 'WPA';
     if (capabilities.contains('WEP')) return 'WEP';
-    if (capabilities.contains('ESS') && !capabilities.contains('WPA') && !capabilities.contains('WEP')) {
+    if (capabilities.contains('ESS') &&
+        !capabilities.contains('WPA') &&
+        !capabilities.contains('WEP')) {
       return 'OPEN';
     }
     return 'Unknown';
@@ -42,10 +44,14 @@ class WiFiNetwork {
 
   String get riskLabel {
     switch (riskLevel) {
-      case RiskLevel.secure: return 'SECURE';
-      case RiskLevel.medium: return 'MEDIUM';
-      case RiskLevel.high: return 'HIGH';
-      case RiskLevel.critical: return 'CRITICAL';
+      case RiskLevel.secure:
+        return 'SECURE';
+      case RiskLevel.medium:
+        return 'MEDIUM';
+      case RiskLevel.high:
+        return 'HIGH';
+      case RiskLevel.critical:
+        return 'CRITICAL';
     }
   }
 
@@ -66,17 +72,25 @@ class WiFiNetwork {
   }
 
   bool get isDefaultSsid {
-    const defaults = ['tplink', 'dlink', 'ptcl', 'default', 'netgear', 'linksys', 'huawei', 'zte', 'fiber'];
+    const defaults = [
+      'tplink',
+      'dlink',
+      'ptcl',
+      'default',
+      'netgear',
+      'linksys',
+      'huawei',
+      'zte',
+      'fiber',
+    ];
     return defaults.any((d) => ssid.toLowerCase().contains(d));
   }
 
-  bool get hasWps {
-    return capabilities.toUpperCase().contains('WPS');
-  }
+  bool get hasWps => capabilities.toUpperCase().contains('WPS');
 
   // For PDF export branding
   String get toReportLine {
-    return 'SSID: $ssid | BSSID: $bssid | $encryptionType | ${riskLabel} | ${signalStrength}dBm | Risks: ${risks.join(', ')}';
+    return 'SSID: $ssid | BSSID: $bssid | $encryptionType | $riskLabel | $signalStrength dBm | Risks: ${risks.join(', ')}';
   }
 
   // For copy to technician
@@ -94,7 +108,12 @@ class WiFiNetwork {
   }
 
   // Factory for discovery_service compatibility
-  factory WiFiNetwork.fromDiscovered({required String ip, required String mac, String? vendor, bool isOwn = false}) {
+  factory WiFiNetwork.fromDiscovered({
+    required String ip,
+    required String mac,
+    String? vendor,
+    bool isOwn = false,
+  }) {
     return WiFiNetwork(
       ssid: 'Device $ip',
       bssid: mac,
