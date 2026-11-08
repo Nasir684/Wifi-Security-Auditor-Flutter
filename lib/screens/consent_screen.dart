@@ -1,16 +1,22 @@
 import 'package:flutter/material.dart';
+import 'package:share_plus/share_plus.dart';
+
 import '../models/wifi_network.dart';
-import '../services/risk_analyzer.dart';
-import '../services/pdf_service.dart';
 import '../services/monetization_service.dart';
 import '../services/ownership_service.dart';
+import '../services/pdf_service.dart';
+import '../services/risk_analyzer.dart';
 import '../widgets/pro_paywall.dart';
-import 'package:share_plus/share_plus.dart';
 
 class ConsentScreen extends StatefulWidget {
   final WiFiNetwork network;
   final List<WiFiNetwork> allNetworks;
-  const ConsentScreen({super.key, required this.network, required this.allNetworks});
+
+  const ConsentScreen({
+    super.key,
+    required this.network,
+    required this.allNetworks,
+  });
 
   @override
   State<ConsentScreen> createState() => _ConsentScreenState();
@@ -21,242 +27,254 @@ class _ConsentScreenState extends State<ConsentScreen> {
   final RiskAnalyzer _analyzer = RiskAnalyzer();
   final PdfService _pdfService = PdfService();
   final MonetizationService _monetization = MonetizationService();
+
   Map<String, dynamic>? _result;
   bool _consented = false;
   bool _isChecking = false;
 
+  @override
+  void dispose() {
+    _passController.dispose();
+    super.dispose();
+  }
+
   Future<void> _checkPassword() async {
     if (!_consented) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('You must confirm you own this network - Required by Google Play')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Confirm you own this network or have permission to test it.'),
+        ),
+      );
       return;
     }
-
     if (_passController.text.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Enter your own password to check')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Enter your own network password to check.')),
+      );
       return;
     }
 
     setState(() => _isChecking = true);
-    
-    // --- New: Uses 10k offline list + gives score + crack time ---
-    var res = await _analyzer.checkWeakPassword(_passController.text);
-    
-    // Save ownership timestamp for audit
-    await OwnershipService.saveOwnership(widget.network.bssid);
-    
-    setState(() {
-      _result = res;
-      _isChecking = false;
-    });
+    try {
+      final result = await _analyzer.checkWeakPassword(_passController.text);
+      await OwnershipService.saveOwnership(widget.network.bssid);
+      if (!mounted) return;
+      setState(() {
+        _result = result;
+        _isChecking = false;
+      });
+    } catch (error) {
+      if (!mounted) return;
+      setState(() => _isChecking = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Could not check the password: $error')),
+      );
+    }
   }
 
-  Future<void> _generatePdfWithMonetization() async {
-    if (_result == null) return;
+  Future<void> _shareReport() async {
+    final result = _result;
+    if (result == null) return;
 
-    if (_monetization.isPro) {
-      var file = await _pdfService.generateReport(widget.allNetworks, testedSsid: widget.network.ssid, testResult: _result);
-      Share.shareXFiles([XFile(file.path)], text: 'WanaLab Pro Audit Report - ${widget.network.ssid}');
-      return;
+    Future<void> generateAndShare() async {
+      final file = await _pdfService.generateReport(
+        widget.allNetworks,
+        testedSsid: widget.network.ssid,
+        testResult: result,
+      );
+      await Share.shareXFiles(
+        [XFile(file.path)],
+        text: 'WanaLab WiFi Audit Report - ${widget.network.ssid}',
+      );
     }
 
-    // Free: Rewarded ad
-    showDialog(
-      context: context,
-      builder: (_) => AlertDialog(
-        backgroundColor: const Color(0xFF141C2F),
-        title: const Text('Unlock PDF with Password Result', style: TextStyle(color: Colors.white)),
-        content: const Text('Watch ad to generate professional PDF with your password strength result for client. Pro users get unlimited.', style: TextStyle(color: Colors.white70, fontSize: 13)),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF3B82F6)),
-            onPressed: () async {
-              Navigator.pop(context);
-              await _monetization.showRewardedForPdf(() async {
-                var file = await _pdfService.generateReport(widget.allNetworks, testedSsid: widget.network.ssid, testResult: _result);
-                Share.shareXFiles([XFile(file.path)], text: 'WanaLab Audit Report - ${widget.network.ssid}');
-              });
-            },
-            child: const Text('Watch Ad', style: TextStyle(color: Colors.white)),
-          ),
-        ],
-      ),
-    );
+    try {
+      if (_monetization.isPro) {
+        await generateAndShare();
+      } else {
+        final shown = await _monetization.showRewardedForPdf(generateAndShare);
+        if (!shown && mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Ad not ready; please try again.')),
+          );
+        }
+      }
+    } catch (error) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Could not generate the report: $error')),
+      );
+    }
   }
 
-  Color _getStrengthColor() {
-    if (_result == null) return Colors.grey;
-    if (_result!['isWeak'] == true) return Colors.red;
-    int score = _result!['score'] ?? _result!['strength'] * 20;
+  Color _strengthColor(Map<String, dynamic> result) {
+    if (result['isWeak'] == true) return Colors.red;
+    final score = (result['score'] as int?) ??
+        ((result['strength'] as int? ?? 0) * 20);
     if (score < 40) return Colors.red;
     if (score < 70) return Colors.orange;
     return Colors.green;
   }
 
+  Color _riskColor() {
+    switch (widget.network.riskLevel) {
+      case RiskLevel.secure:
+        return Colors.green;
+      case RiskLevel.medium:
+        return Colors.orange;
+      case RiskLevel.high:
+        return Colors.deepOrange;
+      case RiskLevel.critical:
+        return Colors.red;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
+    final result = _result;
+    final riskColor = _riskColor();
+
     return Scaffold(
       appBar: AppBar(
         title: Text(widget.network.ssid, style: const TextStyle(fontSize: 16)),
-        backgroundColor: const Color(0xFF0A0E1A),
         actions: [
           if (_monetization.isPro)
-            const Padding(padding: EdgeInsets.only(right: 12), child: Icon(Icons.verified, color: Colors.amber)),
+            const Padding(
+              padding: EdgeInsets.only(right: 12),
+              child: Icon(Icons.verified, color: Colors.amber),
+            ),
         ],
       ),
-      backgroundColor: const Color(0xFF0A0E1A),
-      body: SingleChildScrollView(
+      body: ListView(
         padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // --- Legal Banner - Google wants this ---
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(color: Colors.red.withOpacity(0.12), border: Border.all(color: Colors.red.withOpacity(0.5)), borderRadius: BorderRadius.circular(10)),
-              child: Row(
-                children: [
-                  const Icon(Icons.gavel, color: Colors.redAccent, size: 20),
-                  const SizedBox(width: 8),
-                  const Expanded(child: Text('AUTHORIZED TEST ONLY: Only test networks you own. Testing others without permission is illegal under PECA. This check is 100% offline vs 10k weak list.', style: TextStyle(color: Colors.redAccent, fontSize: 11, fontWeight: FontWeight.w500))),
-                ],
-              ),
+        children: [
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: Colors.red.withValues(alpha: 0.12),
+              border: Border.all(color: Colors.red.withValues(alpha: 0.5)),
+              borderRadius: BorderRadius.circular(10),
             ),
-            const SizedBox(height: 16),
-
-            // --- Network Info ---
-            Container(
+            child: const Text(
+              'AUTHORIZED TEST ONLY: Test networks you own or have explicit permission to assess. Password checking is performed offline on this device.',
+              style: TextStyle(color: Colors.white),
+            ),
+          ),
+          const SizedBox(height: 16),
+          Card(
+            child: Padding(
               padding: const EdgeInsets.all(14),
-              decoration: BoxDecoration(color: const Color(0xFF1A2340), borderRadius: BorderRadius.circular(12), border: Border.all(color: Colors.white10)),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Text('Network: ${widget.network.ssid}', style: const TextStyle(color: Colors.white, fontSize: 15, fontWeight: FontWeight.bold)),
-                      Container(padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3), decoration: BoxDecoration(color: _getRiskColor().withOpacity(0.2), borderRadius: BorderRadius.circular(4)), child: Text(widget.network.riskLabel, style: TextStyle(color: _getRiskColor(), fontSize: 10, fontWeight: FontWeight.bold))),
+                      Expanded(
+                        child: Text(
+                          widget.network.ssid,
+                          style: const TextStyle(fontWeight: FontWeight.bold),
+                        ),
+                      ),
+                      Text(
+                        widget.network.riskLabel,
+                        style: TextStyle(
+                          color: riskColor,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
                     ],
                   ),
-                  const SizedBox(height: 6),
-                  Text('BSSID: ${widget.network.bssid} | Signal: ${widget.network.signalStrength} dBm', style: const TextStyle(color: Colors.white54, fontSize: 11)),
-                  Text('Encryption: ${widget.network.encryptionType}', style: const TextStyle(color: Colors.white70, fontSize: 12)),
                   const SizedBox(height: 8),
-                  Text('Risks: ${widget.network.risks.join(', ')}', style: const TextStyle(color: Colors.orangeAccent, fontSize: 12)),
-                  const SizedBox(height: 4),
-                  Text('Fix: ${widget.network.recommendation}', style: const TextStyle(color: Colors.white60, fontSize: 11)),
-                  const Divider(color: Colors.white10, height: 20),
-                  // --- Block Guide - Technician value ---
-                  const Text('How to Block Unknown Devices (For Technician):', style: TextStyle(color: Colors.white70, fontSize: 11, fontWeight: FontWeight.bold)),
-                  const SizedBox(height: 4),
-                  const Text('1. Open 192.168.1.1 in browser\n2. Login admin/admin\n3. Go to Wireless → MAC Filtering\n4. Add suspicious MAC to block list', style: TextStyle(color: Colors.white38, fontSize: 10)),
+                  Text('BSSID: ${widget.network.bssid}'),
+                  Text('Encryption: ${widget.network.encryptionType}'),
+                  Text('Signal: ${widget.network.signalStrength} dBm'),
+                  const SizedBox(height: 8),
+                  Text('Risks: ${widget.network.risks.join(', ')}'),
+                  Text('Recommendation: ${widget.network.recommendation}'),
                 ],
               ),
             ),
+          ),
+          const SizedBox(height: 12),
+          CheckboxListTile(
+            value: _consented,
+            onChanged: (value) => setState(() => _consented = value ?? false),
+            title: const Text('I own this network or have written permission to test it.'),
+            subtitle: const Text('Required before checking a password.'),
+            controlAffinity: ListTileControlAffinity.leading,
+            contentPadding: EdgeInsets.zero,
+          ),
+          TextField(
+            controller: _passController,
+            obscureText: true,
+            decoration: const InputDecoration(
+              labelText: 'Your own WiFi password',
+              prefixIcon: Icon(Icons.lock_outline),
+              border: OutlineInputBorder(),
+            ),
+          ),
+          const SizedBox(height: 12),
+          FilledButton.icon(
+            onPressed: _isChecking ? null : _checkPassword,
+            icon: _isChecking
+                ? const SizedBox.square(
+                    dimension: 18,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                : const Icon(Icons.security),
+            label: Text(_isChecking ? 'Checking offline…' : 'Check password strength'),
+          ),
+          if (result != null) ...[
             const SizedBox(height: 16),
-
-            // --- Consent Checkbox ---
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-              decoration: BoxDecoration(color: _consented ? Colors.green.withOpacity(0.1) : Colors.orange.withOpacity(0.1), borderRadius: BorderRadius.circular(10), border: Border.all(color: _consented ? Colors.green : Colors.orange, width: 1)),
-              child: CheckboxListTile(
-                value: _consented,
-                onChanged: (v) => setState(() => _consented = v!),
-                activeColor: Colors.green,
-                title: const Text('I confirm I own this network / have written permission to test it', style: TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w500)),
-                subtitle: const Text('Required for Google Play - Ethical use only', style: TextStyle(color: Colors.white54, fontSize: 10)),
-                contentPadding: EdgeInsets.zero,
-                controlAffinity: ListTileControlAffinity.leading,
-              ),
-            ),
-            const SizedBox(height: 16),
-
-            // --- Password Input ---
-            TextField(
-              controller: _passController,
-              obscureText: true,
-              style: const TextStyle(color: Colors.white),
-              decoration: InputDecoration(
-                labelText: 'Enter YOUR OWN WiFi password to check if weak (Offline)',
-                labelStyle: const TextStyle(color: Colors.white54, fontSize: 12),
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
-                enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: const BorderSide(color: Colors.white24)),
-                focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: const BorderSide(color: Color(0xFF3B82F6))),
-                prefixIcon: const Icon(Icons.lock_outline, color: Colors.white54),
-                suffixIcon: IconButton(icon: const Icon(Icons.visibility_off, color: Colors.white24), onPressed: () {}),
-              ),
-            ),
-            const SizedBox(height: 12),
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton.icon(
-                onPressed: _isChecking ? null : _checkPassword,
-                icon: _isChecking ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white)) : const Icon(Icons.security),
-                label: Text(_isChecking ? 'Checking 10k List Offline...' : 'Check Password Strength (Offline 10k)'),
-                style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF3B82F6), foregroundColor: Colors.white, padding: const EdgeInsets.symmetric(vertical: 14), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))),
-              ),
-            ),
-
-            if (_result != null) ...[
-              const SizedBox(height: 20),
-              Container(
-                width: double.infinity,
+            Card(
+              color: _strengthColor(result).withValues(alpha: 0.12),
+              child: Padding(
                 padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(color: _getStrengthColor().withOpacity(0.12), borderRadius: BorderRadius.circular(12), border: Border.all(color: _getStrengthColor(), width: 1.2)),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text(_result!['isWeak'] ? '⚠️ WEAK PASSWORD' : '✅ ${(_result!['level'] ?? 'STRONG')}', style: TextStyle(color: _getStrengthColor(), fontWeight: FontWeight.bold, fontSize: 16)),
-                        Text('${_result!['score'] ?? _result!['strength'] * 20}/100', style: TextStyle(color: _getStrengthColor(), fontWeight: FontWeight.bold)),
-                      ],
+                    Text(
+                      '${result['level'] ?? 'RESULT'} — ${result['score'] ?? 0}/100',
+                      style: TextStyle(
+                        color: _strengthColor(result),
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                     const SizedBox(height: 8),
-                    Text('Crack Time: ${_result!['crackTime'] ?? 'Unknown'}', style: const TextStyle(color: Colors.white70, fontSize: 12, fontWeight: FontWeight.bold)),
-                    const SizedBox(height: 6),
-                    Text(_result!['message'], style: const TextStyle(color: Colors.white70, fontSize: 13)),
-                    if (_result!['recommendations'] != null) ...[
-                      const SizedBox(height: 10),
-                      const Text('Recommendations:', style: TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold)),
-                      const SizedBox(height: 4),
-                      ...(_result!['recommendations'] as List).map((r) => Padding(padding: const EdgeInsets.only(bottom: 3), child: Row(children: [const Text('• ', style: TextStyle(color: Colors.white54)), Expanded(child: Text(r, style: const TextStyle(color: Colors.white60, fontSize: 11)))]))),
-                    ],
-                    if (_result!['isInWeakList'] == true)
-                      Container(margin: const EdgeInsets.only(top: 10), padding: const EdgeInsets.all(8), decoration: BoxDecoration(color: Colors.red.withOpacity(0.15), borderRadius: BorderRadius.circular(6)), child: const Text('Found in 10k most common passwords list - Change immediately! Never share this password.', style: TextStyle(color: Colors.redAccent, fontSize: 11, fontWeight: FontWeight.bold))),
+                    Text('${result['message'] ?? ''}'),
+                    if (result['crackTime'] != null)
+                      Text('Estimated crack time: ${result['crackTime']}'),
+                    if (result['recommendations'] is List)
+                      for (final recommendation
+                          in result['recommendations'] as List)
+                        Text('• $recommendation'),
                   ],
                 ),
               ),
-              const SizedBox(height: 16),
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton.icon(
-                  onPressed: _generatePdfWithMonetization,
-                  icon: const Icon(Icons.picture_as_pdf),
-                  label: Text(_monetization.isPro ? 'Generate PRO PDF' : 'Watch Ad to Generate PDF'),
-                  style: ElevatedButton.styleFrom(backgroundColor: Colors.green.shade700, foregroundColor: Colors.white, padding: const EdgeInsets.symmetric(vertical: 14), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))),
-                ),
+            ),
+            const SizedBox(height: 12),
+            FilledButton.icon(
+              onPressed: _shareReport,
+              icon: const Icon(Icons.picture_as_pdf),
+              label: Text(
+                _monetization.isPro
+                    ? 'Generate report'
+                    : 'Watch ad to generate report',
               ),
-              if (!_monetization.isPro) ...[
-                const SizedBox(height: 12),
-                const ProPaywall(),
-              ],
+            ),
+            if (!_monetization.isPro) ...[
+              const SizedBox(height: 12),
+              const ProPaywall(),
             ],
-            const SizedBox(height: 20),
-            const Text('100% Offline - Password never leaves device, never stored - By WanaLab', textAlign: TextAlign.center, style: TextStyle(color: Colors.white24, fontSize: 10)),
           ],
-        ),
+          const SizedBox(height: 16),
+          const Text(
+            'Your password is not sent to a server or saved by this screen.',
+            textAlign: TextAlign.center,
+            style: TextStyle(color: Colors.white54, fontSize: 12),
+          ),
+        ],
       ),
     );
-  }
-
-  Color _getRiskColor() {
-    switch (widget.network.riskLevel) {
-      case RiskLevel.critical: return Colors.red;
-      case RiskLevel.high: return Colors.deepOrange;
-      case RiskLevel.medium: return Colors.orange;
-      case RiskLevel.secure: return Colors.green;
-    }
   }
 }
