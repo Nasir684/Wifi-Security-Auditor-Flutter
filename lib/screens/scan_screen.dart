@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:permission_handler/permission_handler.dart';
 
 import '../models/wifi_network.dart';
 import '../services/wifi_service.dart';
@@ -20,6 +21,14 @@ class _ScanScreenState extends State<ScanScreen> {
   Future<void> _scanNetworks() async {
     setState(() { _isScanning = true; _errorMessage = null; });
     try {
+      // FIX: Android 13+ needs runtime permission before wifi_scan
+      final locationStatus = await Permission.location.request();
+      final nearbyStatus = await Permission.nearbyWifiDevices.request();
+      
+      if (locationStatus.isDenied || nearbyStatus.isDenied) {
+        throw Exception('Location & Nearby WiFi permission required. Please allow in settings.');
+      }
+
       final networks = await _wifiService.scanNetworks();
       if (!mounted) return;
       setState(() { _networks = networks; _isScanning = false; });
