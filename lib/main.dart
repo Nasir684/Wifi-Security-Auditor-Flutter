@@ -5,8 +5,13 @@ import 'screens/scan_screen.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   
-  // Only AdMob here - permission must be in ScanScreen
-  await MobileAds.instance.initialize();
+  // FIX: Don't await AdMob in main - it crashes on some phones before UI shows
+  // Initialize in background and ignore errors
+  try {
+    MobileAds.instance.initialize();
+  } catch (_) {
+    // Ignore - app should open even if AdMob fails
+  }
 
   runApp(const WiFiAuditorApp());
 }
