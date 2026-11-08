@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-...
+import 'screens/scan_screen.dart';
+
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
   runApp(const WiFiAuditorApp());
@@ -12,13 +13,20 @@ class WiFiAuditorApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'WiFi Security Auditor',
-      theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.blue),
+      debugShowCheckedModeBanner: false,
+      themeMode: ThemeMode.dark,
+      darkTheme: ThemeData(
+        brightness: Brightness.dark,
+        scaffoldBackgroundColor: const Color(0xFF0A0E1A),
+        primaryColor: Colors.blueAccent,
+        appBarTheme: const AppBarTheme(
+          backgroundColor: Color(0xFF141C2F),
+          elevation: 0,
+          centerTitle: true,
+        ),
         useMaterial3: true,
       ),
-      home: const Scaffold(
-        body: Center(child: Text('WiFi Security Auditor')),
-      ),
+      home: const ScanScreen(),
     );
   }
 }
