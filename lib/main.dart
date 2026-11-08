@@ -6,14 +6,12 @@ import 'screens/scan_screen.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   
-  // REQUIRED for AdMob - this was missing
+  // For google_mobile_ads 9.2.0
   await MobileAds.instance.initialize();
-  
-  // REQUIRED for Android 13+ WiFi scan
-  await [
-    Permission.location,
-    Permission.nearbyWifiDevices,
-  ].request();
+
+  // For wifi_scan on Android 13+
+  await Permission.location.request();
+  await Permission.nearbyWifiDevices.request();
 
   runApp(const WiFiAuditorApp());
 }
