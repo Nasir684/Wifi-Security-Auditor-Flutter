@@ -21,55 +21,41 @@ jobs:
           distribution: temurin
           java-version: '17'
 
-      - name: Set up Flutter
+      - name: Set up Flutter 3.32.8
         uses: subosito/flutter-action@v2
         with:
           channel: stable
-          flutter-version: '3.22.3'
+          flutter-version: '3.32.8'
           cache: true
 
-      - name: Restore Android scaffold if missing
+      - name: Patch Android files for 3.32.8
         shell: bash
         run: |
-          if [[ ! -f android/app/build.gradle ]]; then
-            flutter create --platforms=android --org com.wanalab --project-name wifi_security_auditor .
-          fi
-
-      - name: Patch Android files
-        shell: bash
-        run: |
-          # Fix wrapper - create if missing
           mkdir -p android/gradle/wrapper
-          echo "distributionBase=GRADLE_USER_HOME
+          cat > android/gradle/wrapper/gradle-wrapper.properties << 'EOF'
+          distributionBase=GRADLE_USER_HOME
           distributionPath=wrapper/dists
           zipStoreBase=GRADLE_USER_HOME
           zipStorePath=wrapper/dists
-          distributionUrl=https\://services.gradle.org/distributions/gradle-8.4-all.zip" > android/gradle/wrapper/gradle-wrapper.properties
-
-          # Fix kotlin version to 1.9.22
-          sed -i "s/1.9.10/1.9.22/g" android/settings.gradle
+          distributionUrl=https\://services.gradle.org/distributions/gradle-8.10.2-all.zip
+          EOF
           
-          # Fix minSdk
-          sed -i 's/minSdkVersion 16/minSdkVersion 21/g' android/app/build.gradle || true
-          sed -i 's/minSdk 16/minSdk 21/g' android/app/build.gradle || true
-          sed -i 's/flutter.minSdkVersion 16/flutter.minSdkVersion 21/g' android/app/build.gradle || true
-          sed -i 's/minSdkVersion 21/minSdkVersion 21/g' android/app/build.gradle || true
-          
-          # Patch AdMob
+          # Patch manifest for AdMob
           MANIFEST="android/app/src/main/AndroidManifest.xml"
-          if ! grep -q "AD_ID" "$MANIFEST"; then
-            sed -i '/<manifest/a \    <uses-permission android:name="com.google.android.gms.permission.AD_ID" />' "$MANIFEST"
+          if [ -f "$MANIFEST" ]; then
+            if ! grep -q "AD_ID" "$MANIFEST"; then
+              sed -i '/<manifest/a \    <uses-permission android:name="com.google.android.gms.permission.AD_ID" />' "$MANIFEST"
+            fi
+            if ! grep -q "APPLICATION_ID" "$MANIFEST"; then
+              sed -i '/<application/a \        <meta-data android:name="com.google.android.gms.ads.APPLICATION_ID" android:value="ca-app-pub-3940256099942544~3347511713"\/>' "$MANIFEST"
+            fi
           fi
-          if ! grep -q "APPLICATION_ID" "$MANIFEST"; then
-            sed -i '/<application/a \        <meta-data android:name="com.google.android.gms.ads.APPLICATION_ID" android:value="ca-app-pub-3940256099942544~3347511713"\/>' "$MANIFEST"
-          fi
-          sed -i 's|@mipmap/launcher_icon|@mipmap/ic_launcher|g' "$MANIFEST" || true
 
       - name: Get dependencies
         run: flutter pub get
 
       - name: Generate launcher icons
-        run: flutter pub run flutter_launcher_icons || flutter pub run flutter_launcher_icons:main || echo "Icon gen skipped"
+        run: dart run flutter_launcher_icons || echo "Icon gen skipped"
 
       - name: Build APK
         run: flutter build apk --release --no-tree-shake-icons
