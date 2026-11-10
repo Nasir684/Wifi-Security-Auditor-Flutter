@@ -40,4 +40,17 @@ class WiFiNetwork {
       case RiskLevel.critical: return 'Critical';
     }
   }
+
+  String get recommendation {
+    switch (riskLevel) {
+      case RiskLevel.critical:
+        return 'CRITICAL: Change to WPA2/WPA3 immediately. Disable WPS.';
+      case RiskLevel.high:
+        return 'HIGH: Upgrade from WPA to WPA2/WPA3. Use AES.';
+      case RiskLevel.medium:
+        return 'MEDIUM: Switch TKIP to AES/CCMP.';
+      case RiskLevel.secure:
+        return 'Secure: Keep firmware updated, use strong password.';
+    }
+  }
 }
