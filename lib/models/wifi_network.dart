@@ -41,6 +41,31 @@ class WiFiNetwork {
     }
   }
 
+  // THIS WAS MISSING - FIXES YOUR ERROR
+  List<String> get risks {
+    List<String> list = [];
+    if (encryptionType == 'Open') {
+      list.add('Open network - No encryption');
+      list.add('Traffic can be intercepted');
+    }
+    if (encryptionType == 'WEP') {
+      list.add('WEP is broken - Crackable in minutes');
+    }
+    if (encryptionType == 'WPA') {
+      list.add('WPA-TKIP is outdated');
+    }
+    if (capabilities.contains('WPS')) {
+      list.add('WPS enabled - Vulnerable to brute force');
+    }
+    if (capabilities.contains('TKIP')) {
+      list.add('Uses TKIP instead of AES');
+    }
+    if (list.isEmpty) {
+      list.add('No major risks detected');
+    }
+    return list;
+  }
+
   String get recommendation {
     switch (riskLevel) {
       case RiskLevel.critical:
