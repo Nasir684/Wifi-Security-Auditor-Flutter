@@ -1,5 +1,5 @@
 name: wifi_security_auditor
-description: WanaLab - WiFi Security Auditor. Scan, detect risks, protect your network. Built in Wana, South Waziristan. Contact: nasir@wanalab.org
+description: "WanaLab - WiFi Security Auditor - Built in Wana South Waziristan - nasir@wanalab.org"
 publish_to: 'none'
 version: 1.0.0+1
 
@@ -29,4 +29,4 @@ dev_dependencies:
 flutter:
   uses-material-design: true
   assets:
-        - assets/images/
+    - assets/images/
