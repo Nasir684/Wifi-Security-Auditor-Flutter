@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:share_plus/share_plus.dart';
 
 class AboutPage extends StatelessWidget {
   const AboutPage({super.key});
@@ -7,94 +6,94 @@ class AboutPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text("About")),
+      backgroundColor: const Color(0xFF0A0E1A),
+      appBar: AppBar(
+        title: const Text('About WanaLab'),
+        backgroundColor: const Color(0xFF141C2F),
+        centerTitle: true,
+      ),
       body: ListView(
-        padding: const EdgeInsets.all(20),
+        padding: const EdgeInsets.all(16),
         children: [
-          Center(
-            child: CircleAvatar(
-              radius: 45,
-              backgroundColor: Colors.blue.shade900.withOpacity(0.2),
-              child: Icon(Icons.security, size: 45, color: Colors.blue.shade400),
-            ),
+          const SizedBox(height: 20),
+          const Center(
+            child: Icon(Icons.shield, size: 80, color: Color(0xFF3B82F6)),
           ),
           const SizedBox(height: 16),
-          const Center(child: Text("WiFi Security Auditor", style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold))),
-          const Center(child: Text("v1.0.0+1 Global Monetized", style: TextStyle(color: Colors.grey, fontSize: 12))),
-          const SizedBox(height: 6),
-          const Center(child: Text("WanaLab", style: TextStyle(color: Colors.blueAccent, fontWeight: FontWeight.w600, letterSpacing: 1.2))),
-          const SizedBox(height: 20),
-
-          Card(
-            child: ListTile(
-              leading: const Icon(Icons.person, color: Colors.blueAccent),
-              title: const Text("Developer"),
-              subtitle: const Text("Nasir Khan - WanaLab\nLead Developer & Security Researcher"),
-            ),
-          ),
-          Card(
-            child: ListTile(
-              leading: const Icon(Icons.location_on, color: Colors.green),
-              title: const Text("Origin"),
-              subtitle: const Text("Wana, South Waziristan, KPK, Pakistan\nBuilt in Wana, Serving Technicians Worldwide"),
-            ),
-          ),
-          Card(
-            child: ListTile(
-              leading: const Icon(Icons.email, color: Colors.orange),
-              title: const Text("Support Email"),
-              subtitle: const Text("wanadev.lab@gmail.com\nTap to share support info"),
-              onTap: () {
-                Share.share('Contact WanaLab Support: wanadev.lab@gmail.com\nWiFi Security Auditor - From Wana, South Waziristan');
-              },
-            ),
-          ),
-          Card(
-            color: const Color(0xFF1A2340),
-            child: ListTile(
-              leading: const Icon(Icons.shield, color: Colors.greenAccent),
-              title: const Text("Ethical Commitment"),
-              subtitle: const Text(
-                "100% Offline. No hacking, cracking or unauthorized access.\nFor networks you own or have written permission to audit only.\n\nComplies with:\n• PECA 2016 (Pakistan)\n• CFAA (USA)\n• Computer Misuse Act (UK)\n• GDPR (EU)",
-                style: TextStyle(height: 1.4),
-              ),
-            ),
-          ),
-          Card(
-            child: ListTile(
-              leading: const Icon(Icons.privacy_tip, color: Colors.purpleAccent),
-              title: const Text("Privacy Policy"),
-              subtitle: const Text("https://wanadev.github.io/privacy-policy.html\nNo data collected. 100% offline."),
-              onTap: () {
-                Share.share('Privacy Policy - WanaLab WiFi Auditor: https://wanadev.github.io/privacy-policy.html\n100% Offline, No data collected.');
-              },
-            ),
-          ),
-          Card(
-            child: ListTile(
-              leading: const Icon(Icons.share, color: Colors.blue),
-              title: const Text("Share App"),
-              subtitle: const Text("Share with fellow technicians"),
-              onTap: () {
-                Share.share(
-                    'Check out WiFi Security Auditor by WanaLab, Wana - South Waziristan!\nEthical toolkit for technicians.\nhttps://play.google.com/store/apps/details?id=com.wanalab.wifi_security_auditor');
-              },
+          const Center(
+            child: Text(
+              'WiFi Security Auditor\nWanaLab',
+              textAlign: TextAlign.center,
+              style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.white),
             ),
           ),
           const SizedBox(height: 24),
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.05),
-              borderRadius: BorderRadius.circular(12),
+          _tile(
+            icon: Icons.person,
+            iconColor: Colors.blueAccent,
+            title: "Developer",
+            subtitle: "Nasir Khan - WanaLab\nLead Developer - 100% Offline Security",
+          ),
+          _tile(
+            icon: Icons.location_on,
+            iconColor: Colors.green,
+            title: "Origin",
+            subtitle: "Wana, South Waziristan, KPK, Pakistan\nProudly Made in Pakistan for Global Market",
+          ),
+          _tile(
+            icon: Icons.email,
+            iconColor: Colors.orange,
+            title: "Support Email",
+            subtitle: "nasir@wanalab.org\nTap to share feedback - Contact WanaLab Support: nasir@wanalab.org",
+          ),
+          const SizedBox(height: 12),
+          Card(
+            color: const Color(0xFF1A2340),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            child: const Padding(
+              padding: EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Icon(Icons.shield, color: Colors.greenAccent),
+                      SizedBox(width: 8),
+                      Text("Ethical Commitment", style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white, fontSize: 16)),
+                    ],
+                  ),
+                  SizedBox(height: 8),
+                  Text(
+                    "100% Offline. No hacking, cracking or unauthorized access. We process WiFi scan results ephemerally to audit YOUR own network security. No data leaves device. Ethical auditing for everyone.\n\nNEARBY_WIFI_DEVICES neverForLocation - we never track location.",
+                    style: TextStyle(color: Colors.white70, height: 1.4),
+                  ),
+                ],
+              ),
             ),
-            child: const Text(
-              "Built for Global WiFi Technicians, IT Admins & Security-conscious Home Users.\n\nDesigned and developed in Wana, South Waziristan, KPK, Pakistan with pride.\n\n© 2026 WanaLab. All rights reserved.",
-              textAlign: TextAlign.center,
-              style: TextStyle(fontSize: 12, color: Colors.grey, height: 1.5),
+          ),
+          const SizedBox(height: 12),
+          const Card(
+            color: Color(0xFF1A2340),
+            child: ListTile(
+              leading: Icon(Icons.info, color: Colors.blue),
+              title: Text('Version', style: TextStyle(color: Colors.white)),
+              subtitle: Text('1.0.0+1 Global Monetized - WanaLab Pro \$4.99\nContact: nasir@wanalab.org', style: TextStyle(color: Colors.white70)),
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  static Widget _tile({required IconData icon, required Color iconColor, required String title, required String subtitle}) {
+    return Card(
+      color: const Color(0xFF1A2340),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      margin: const EdgeInsets.only(bottom: 12),
+      child: ListTile(
+        leading: Icon(icon, color: iconColor),
+        title: Text(title, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+        subtitle: Text(subtitle, style: const TextStyle(color: Colors.white70)),
       ),
     );
   }
