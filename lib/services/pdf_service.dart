@@ -34,7 +34,7 @@ class PdfService {
           pw.Header(
             level: 0,
             child: pw.Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+              crossAxisAlignment: pw.CrossAxisAlignment.start, // FIXED
               children: [
                 pw.Text('WiFi Security Audit Report', style: pw.TextStyle(fontSize: 24, fontWeight: pw.FontWeight.bold, color: PdfColors.blue900)),
                 pw.SizedBox(height: 4),
