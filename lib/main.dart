@@ -1,27 +1,53 @@
-import 'settings_page.dart';
 import 'package:flutter/material.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'screens/scan_screen.dart';
+import 'screens/settings_page.dart';
+import 'screens/about_page.dart';
+import 'services/pro_service.dart';
+import 'services/ad_service.dart';
+import 'services/purchase_service.dart';
 import 'services/monetization_service.dart';
-import 'settings_page.dart';
-import 'about_page.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // WanaLab: Initialize Monetization + Ads
+  // WanaLab: Initialize - Works 100% offline in Wana
   try {
     await MobileAds.instance.initialize();
+    await ProService.init();
+    await AdService.init();
     await MonetizationService().initialize();
   } catch (_) {
-    // Offline mode - app should still launch in Wana
+    // Offline mode - app launches in Wana without internet
+    await ProService.init();
   }
+
+  // FOR TESTING PRO ONLY - Uncomment to test $4.99 without paying
+  // await ProService.enableProForTesting();
 
   runApp(const WiFiAuditorApp());
 }
 
-class WiFiAuditorApp extends StatelessWidget {
+class WiFiAuditorApp extends StatefulWidget {
   const WiFiAuditorApp({super.key});
+  @override
+  State<WiFiAuditorApp> createState() => _WiFiAuditorAppState();
+}
+
+class _WiFiAuditorAppState extends State<WiFiAuditorApp> {
+  final PurchaseService _purchaseService = PurchaseService();
+  
+  @override
+  void initState() {
+    super.initState();
+    _purchaseService.init();
+  }
+
+  @override
+  void dispose() {
+    _purchaseService.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -57,7 +83,7 @@ class WiFiAuditorApp extends StatelessWidget {
         ),
         useMaterial3: true,
       ),
-      // Global Routes - Required for About + Settings
+      // Global Routes - Required for About + Settings - Contact: nasir@wanalab.org
       routes: {
         '/settings': (context) => const SettingsPage(),
         '/about': (context) => const AboutPage(),
