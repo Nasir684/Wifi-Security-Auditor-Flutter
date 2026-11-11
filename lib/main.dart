@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'screens/scan_screen.dart';
+import 'settings_page.dart';
+import 'about_page.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -20,7 +22,7 @@ class WiFiAuditorApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'WanaLab WiFi Scanner',
+      title: 'WiFi Security Auditor - WanaLab',
       debugShowCheckedModeBanner: false,
       themeMode: ThemeMode.dark,
       darkTheme: ThemeData(
@@ -32,8 +34,18 @@ class WiFiAuditorApp extends StatelessWidget {
           elevation: 0,
           centerTitle: true,
         ),
+        cardTheme: CardTheme(
+          color: const Color(0xFF1A2340),
+          elevation: 0,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        ),
         useMaterial3: true,
       ),
+      // Global Routes - Required for About + Settings
+      routes: {
+        '/settings': (context) => const SettingsPage(),
+        '/about': (context) => const AboutPage(),
+      },
       home: const ScanScreen(),
     );
   }
