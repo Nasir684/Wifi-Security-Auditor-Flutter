@@ -84,7 +84,7 @@ class _ConsentScreenState extends State<ConsentScreen> {
       );
       await Share.shareXFiles(
         [XFile(file.path)],
-        text: 'WanaLab WiFi Audit Report - ${widget.network.ssid}',
+        text: 'WanaLab WiFi Audit Report - ${widget.network.ssid} | Wana, South Waziristan',
       );
     }
 
@@ -151,12 +151,12 @@ class _ConsentScreenState extends State<ConsentScreen> {
           Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: Colors.red.withValues(alpha: 0.12),
-              border: Border.all(color: Colors.red.withValues(alpha: 0.5)),
+              color: Colors.red.withOpacity(0.12),
+              border: Border.all(color: Colors.red.withOpacity(0.5)),
               borderRadius: BorderRadius.circular(10),
             ),
             child: const Text(
-              'AUTHORIZED TEST ONLY: Test networks you own or have explicit permission to assess. Password checking is performed offline on this device.',
+              'AUTHORIZED TEST ONLY: Test networks you own or have explicit permission to assess. Password checking is performed 100% offline on this device - No data leaves device. From WanaLab, Wana.',
               style: TextStyle(color: Colors.white),
             ),
           ),
@@ -175,22 +175,30 @@ class _ConsentScreenState extends State<ConsentScreen> {
                           style: const TextStyle(fontWeight: FontWeight.bold),
                         ),
                       ),
-                      Text(
-                        widget.network.riskLabel,
-                        style: TextStyle(
-                          color: riskColor,
-                          fontWeight: FontWeight.bold,
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: riskColor.withOpacity(0.15),
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                        child: Text(
+                          widget.network.riskLabel,
+                          style: TextStyle(
+                            color: riskColor,
+                            fontWeight: FontWeight.bold,
+                          ),
                         ),
                       ),
                     ],
                   ),
                   const SizedBox(height: 8),
                   Text('BSSID: ${widget.network.bssid}'),
-                  Text('Encryption: ${widget.network.encryptionType}'),
-                  Text('Signal: ${widget.network.signalStrength} dBm'),
+                  Text('Encryption: ${widget.network.encryptionType} | Band: ${widget.network.band}'),
+                  Text('Signal: ${widget.network.signalStrength} dBm (${widget.network.signalQuality}%)'),
                   const SizedBox(height: 8),
                   Text('Risks: ${widget.network.risks.join(', ')}'),
-                  Text('Recommendation: ${widget.network.recommendation}'),
+                  const SizedBox(height: 4),
+                  Text('Recommendation: ${widget.network.recommendation}', style: const TextStyle(fontStyle: FontStyle.italic)),
                 ],
               ),
             ),
@@ -200,7 +208,7 @@ class _ConsentScreenState extends State<ConsentScreen> {
             value: _consented,
             onChanged: (value) => setState(() => _consented = value ?? false),
             title: const Text('I own this network or have written permission to test it.'),
-            subtitle: const Text('Required before checking a password.'),
+            subtitle: const Text('Required before checking a password. PECA 2016 compliant.'),
             controlAffinity: ListTileControlAffinity.leading,
             contentPadding: EdgeInsets.zero,
           ),
@@ -208,9 +216,10 @@ class _ConsentScreenState extends State<ConsentScreen> {
             controller: _passController,
             obscureText: true,
             decoration: const InputDecoration(
-              labelText: 'Your own WiFi password',
+              labelText: 'Your own WiFi password (offline check)',
               prefixIcon: Icon(Icons.lock_outline),
               border: OutlineInputBorder(),
+              helperText: 'Never stored or sent - WanaLab offline',
             ),
           ),
           const SizedBox(height: 12),
@@ -222,12 +231,12 @@ class _ConsentScreenState extends State<ConsentScreen> {
                     child: CircularProgressIndicator(strokeWidth: 2),
                   )
                 : const Icon(Icons.security),
-            label: Text(_isChecking ? 'Checking offline…' : 'Check password strength'),
+            label: Text(_isChecking ? 'Checking offline…' : 'Check password strength (Offline)'),
           ),
           if (result != null) ...[
             const SizedBox(height: 16),
             Card(
-              color: _strengthColor(result).withValues(alpha: 0.12),
+              color: _strengthColor(result).withOpacity(0.12),
               child: Padding(
                 padding: const EdgeInsets.all(16),
                 child: Column(
@@ -238,16 +247,24 @@ class _ConsentScreenState extends State<ConsentScreen> {
                       style: TextStyle(
                         color: _strengthColor(result),
                         fontWeight: FontWeight.bold,
+                        fontSize: 16,
                       ),
                     ),
                     const SizedBox(height: 8),
                     Text('${result['message'] ?? ''}'),
                     if (result['crackTime'] != null)
-                      Text('Estimated crack time: ${result['crackTime']}'),
-                    if (result['recommendations'] is List)
-                      for (final recommendation
-                          in result['recommendations'] as List)
-                        Text('• $recommendation'),
+                      Padding(
+                        padding: const EdgeInsets.only(top: 4),
+                        child: Text('Estimated crack time: ${result['crackTime']}', style: const TextStyle(fontWeight: FontWeight.bold)),
+                      ),
+                    if (result['recommendations'] is List) ...[
+                      const SizedBox(height: 8),
+                      for (final recommendation in result['recommendations'] as List)
+                        Padding(
+                          padding: const EdgeInsets.only(top: 2),
+                          child: Text('• $recommendation'),
+                        ),
+                    ],
                   ],
                 ),
               ),
@@ -258,7 +275,7 @@ class _ConsentScreenState extends State<ConsentScreen> {
               icon: const Icon(Icons.picture_as_pdf),
               label: Text(
                 _monetization.isPro
-                    ? 'Generate report'
+                    ? 'Generate Pro Report (WanaLab)'
                     : 'Watch ad to generate report',
               ),
             ),
@@ -269,9 +286,9 @@ class _ConsentScreenState extends State<ConsentScreen> {
           ],
           const SizedBox(height: 16),
           const Text(
-            'Your password is not sent to a server or saved by this screen.',
+            'Your password is not sent to a server or saved by this screen. 100% Offline by WanaLab, Wana, South Waziristan.',
             textAlign: TextAlign.center,
-            style: TextStyle(color: Colors.white54, fontSize: 12),
+            style: TextStyle(color: Colors.white54, fontSize: 11),
           ),
         ],
       ),
