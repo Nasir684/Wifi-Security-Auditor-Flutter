@@ -28,8 +28,8 @@ class _ReportScreenState extends State<ReportScreen> {
         await Share.shareXFiles(
           [XFile(file.path)],
           text: _monetization.isPro
-              ? 'WanaLab Pro Audit Report'
-              : 'WanaLab WiFi Audit Report',
+              ? 'WanaLab Pro Audit Report - Wana, South Waziristan'
+              : 'WanaLab WiFi Audit Report - WanaLab',
         );
       }
 
@@ -69,23 +69,15 @@ class _ReportScreenState extends State<ReportScreen> {
   @override
   Widget build(BuildContext context) {
     final total = widget.networks.length;
-    final secure = widget.networks
-        .where((network) => network.riskLevel == RiskLevel.secure)
-        .length;
-    final critical = widget.networks
-        .where((network) => network.riskLevel == RiskLevel.critical)
-        .length;
-    final high = widget.networks
-        .where((network) => network.riskLevel == RiskLevel.high)
-        .length;
-    final medium = widget.networks
-        .where((network) => network.riskLevel == RiskLevel.medium)
-        .length;
+    final secure = widget.networks.where((n) => n.riskLevel == RiskLevel.secure).length;
+    final critical = widget.networks.where((n) => n.riskLevel == RiskLevel.critical).length;
+    final high = widget.networks.where((n) => n.riskLevel == RiskLevel.high).length;
+    final medium = widget.networks.where((n) => n.riskLevel == RiskLevel.medium).length;
     final securePercent = total == 0 ? 0.0 : secure / total;
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Audit Summary'),
+        title: const Text('Audit Summary - WanaLab'),
         actions: [
           if (_monetization.isPro)
             const Padding(
@@ -107,12 +99,12 @@ class _ReportScreenState extends State<ReportScreen> {
                 children: [
                   Text(
                     '${(securePercent * 100).round()}% Secure',
-                    style: Theme.of(context).textTheme.headlineSmall,
+                    style: Theme.of(context).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold),
                   ),
                   const SizedBox(height: 12),
-                  LinearProgressIndicator(value: securePercent),
+                  LinearProgressIndicator(value: securePercent, minHeight: 8, borderRadius: BorderRadius.circular(4)),
                   const SizedBox(height: 8),
-                  Text('Scanned $total networks'),
+                  Text('Scanned $total networks | WanaLab, Wana, South Waziristan', style: const TextStyle(fontSize: 12, color: Colors.white70)),
                 ],
               ),
             ),
@@ -133,15 +125,14 @@ class _ReportScreenState extends State<ReportScreen> {
             Card(
               child: ListTile(
                 leading: Icon(Icons.wifi, color: _riskColor(network.riskLevel)),
-                title: Text(network.ssid),
-                subtitle: Text(
-                  '${network.encryptionType} · ${network.signalStrength} dBm',
-                ),
-                trailing: Text(
-                  network.riskLabel,
-                  style: TextStyle(
-                    color: _riskColor(network.riskLevel),
-                    fontWeight: FontWeight.bold,
+                title: Text(network.ssid.isEmpty ? '<Hidden SSID>' : network.ssid, style: const TextStyle(fontWeight: FontWeight.w600)),
+                subtitle: Text('${network.encryptionType} · ${network.signalStrength} dBm · ${network.band}'),
+                trailing: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  decoration: BoxDecoration(color: _riskColor(network.riskLevel).withOpacity(0.15), borderRadius: BorderRadius.circular(6)),
+                  child: Text(
+                    network.riskLabel,
+                    style: TextStyle(color: _riskColor(network.riskLevel), fontWeight: FontWeight.bold, fontSize: 12),
                   ),
                 ),
               ),
@@ -150,18 +141,9 @@ class _ReportScreenState extends State<ReportScreen> {
           FilledButton.icon(
             onPressed: _isGenerating ? null : _exportReport,
             icon: _isGenerating
-                ? const SizedBox.square(
-                    dimension: 18,
-                    child: CircularProgressIndicator(strokeWidth: 2),
-                  )
+                ? const SizedBox.square(dimension: 18, child: CircularProgressIndicator(strokeWidth: 2))
                 : const Icon(Icons.picture_as_pdf),
-            label: Text(
-              _isGenerating
-                  ? 'Generating…'
-                  : _monetization.isPro
-                      ? 'Export report'
-                      : 'Watch ad to export report',
-            ),
+            label: Text(_isGenerating ? 'Generating…' : _monetization.isPro ? 'Export Pro Report (No Watermark)' : 'Watch ad to export report'),
           ),
           if (!_monetization.isPro) ...[
             const SizedBox(height: 12),
@@ -169,9 +151,9 @@ class _ReportScreenState extends State<ReportScreen> {
           ],
           const SizedBox(height: 16),
           const Text(
-            'For authorized auditing only. Network data is displayed locally on this device.',
+            'For authorized auditing only. Network data is displayed locally on this device. No data sent to server. Developed in Wana, South Waziristan.',
             textAlign: TextAlign.center,
-            style: TextStyle(color: Colors.white54, fontSize: 12),
+            style: TextStyle(color: Colors.white54, fontSize: 11),
           ),
         ],
       ),
@@ -180,9 +162,9 @@ class _ReportScreenState extends State<ReportScreen> {
 
   Widget _summaryChip(String label, int count, Color color) {
     return Chip(
-      label: Text('$label: $count'),
-      side: BorderSide(color: color.withValues(alpha: 0.5)),
-      backgroundColor: color.withValues(alpha: 0.12),
+      label: Text('$label: $count', style: TextStyle(color: color, fontWeight: FontWeight.bold)),
+      side: BorderSide(color: color.withOpacity(0.5)),
+      backgroundColor: color.withOpacity(0.12),
     );
   }
 }
