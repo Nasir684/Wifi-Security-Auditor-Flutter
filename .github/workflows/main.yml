@@ -28,7 +28,7 @@ jobs:
           flutter-version: '3.32.8'
           cache: true
 
-      - name: Patch Android files for 3.32.8
+      - name: Patch Android files for 3.32.8 + Global Monetized
         shell: bash
         run: |
           mkdir -p android/gradle/wrapper
@@ -40,37 +40,59 @@ jobs:
           distributionUrl=https\://services.gradle.org/distributions/gradle-8.10.2-all.zip
           EOF
           
-          # Patch manifest for AdMob
+          # Patch manifest for AdMob + Permissions
           MANIFEST="android/app/src/main/AndroidManifest.xml"
           if [ -f "$MANIFEST" ]; then
+            echo "Patching $MANIFEST"
+            # AD_ID for Ads
             if ! grep -q "AD_ID" "$MANIFEST"; then
               sed -i '/<manifest/a \    <uses-permission android:name="com.google.android.gms.permission.AD_ID" />' "$MANIFEST"
             fi
+            # AdMob App ID (Test ID - Replace with real before production)
             if ! grep -q "APPLICATION_ID" "$MANIFEST"; then
               sed -i '/<application/a \        <meta-data android:name="com.google.android.gms.ads.APPLICATION_ID" android:value="ca-app-pub-3940256099942544~3347511713"\/>' "$MANIFEST"
             fi
+            # Required for wifi_scan on Android 13+
+            if ! grep -q "ACCESS_FINE_LOCATION" "$MANIFEST"; then
+              sed -i '/<manifest/a \    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />' "$MANIFEST"
+            fi
+            if ! grep -q "NEARBY_WIFI_DEVICES" "$MANIFEST"; then
+              sed -i '/<manifest/a \    <uses-permission android:name="android.permission.NEARBY_WIFI_DEVICES" android:required="false" />' "$MANIFEST"
+            fi
+            cat "$MANIFEST"
+          fi
+
+          # Ensure assets folder exists (for icon)
+          mkdir -p assets/images
+          if [ ! -f "assets/images/icon.png" ]; then
+            echo "WARNING: assets/images/icon.png not found - icon generation will skip"
           fi
 
       - name: Get dependencies
         run: flutter pub get
 
       - name: Generate launcher icons
-        run: dart run flutter_launcher_icons || echo "Icon gen skipped"
+        run: dart run flutter_launcher_icons || echo "Icon gen skipped - add assets/images/icon.png"
 
-      - name: Build APK
-        run: flutter build apk --release --no-tree-shake-icons
+      - name: Analyze (no fail)
+        run: flutter analyze || true
 
-      - name: Build AppBundle
-        run: flutter build appbundle --release --no-tree-shake-icons
+      - name: Build APK (Global Monetized)
+        run: flutter build apk --release --no-tree-shake-icons --build-name=1.0.0 --build-number=1
+
+      - name: Build AppBundle (for Play Store)
+        run: flutter build appbundle --release --no-tree-shake-icons --build-name=1.0.0 --build-number=1
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: app-release-apk
+          name: app-release-apk-global
           path: build/app/outputs/flutter-apk/app-release.apk
+          retention-days: 7
 
       - name: Upload AAB
         uses: actions/upload-artifact@v4
         with:
-          name: app-release-aab
+          name: app-release-aab-global
           path: build/app/outputs/bundle/release/app-release.aab
+          retention-days: 7
