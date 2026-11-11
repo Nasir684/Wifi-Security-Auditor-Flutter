@@ -3,6 +3,8 @@ import '../models/wifi_network.dart';
 import '../services/wifi_service.dart';
 import 'consent_screen.dart';
 import 'report_screen.dart';
+import '../settings_page.dart';
+import '../about_page.dart';
 
 class ScanScreen extends StatefulWidget {
   const ScanScreen({super.key});
@@ -22,7 +24,6 @@ class _ScanScreenState extends State<ScanScreen> {
       _errorMessage = null;
     });
     try {
-      // Permission handled inside WiFiService only - no double dialog
       final networks = await _wifiService.scanNetworks();
       if (!mounted) return;
       setState(() {
@@ -68,6 +69,72 @@ class _ScanScreenState extends State<ScanScreen> {
             ),
         ],
       ),
+      // ADDED DRAWER - Global Monetized + About Wana
+      drawer: Drawer(
+        child: ListView(
+          padding: EdgeInsets.zero,
+          children: [
+            DrawerHeader(
+              decoration: const BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [Color(0xFF141C2F), Color(0xFF1A2340)],
+                ),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  Icon(Icons.security, size: 40, color: Colors.blueAccent),
+                  const SizedBox(height: 10),
+                  const Text("WiFi Security Auditor",
+                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white)),
+                  const Text("WanaLab - Wana, South Waziristan",
+                      style: TextStyle(fontSize: 12, color: Colors.white70)),
+                  const Text("v1.0.0 Global Monetized",
+                      style: TextStyle(fontSize: 10, color: Colors.white54)),
+                ],
+              ),
+            ),
+            ListTile(
+              leading: const Icon(Icons.wifi_find),
+              title: const Text("Scan Networks"),
+              subtitle: const Text("Ethical audit mode"),
+              selected: true,
+              onTap: () => Navigator.pop(context),
+            ),
+            ListTile(
+              leading: const Icon(Icons.settings),
+              title: const Text("Settings"),
+              trailing: const Icon(Icons.arrow_forward_ios, size: 14),
+              onTap: () {
+                Navigator.pop(context);
+                Navigator.push(context, MaterialPageRoute(builder: (_) => const SettingsPage()));
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.info_outline),
+              title: const Text("About Developer"),
+              subtitle: const Text("Nasir Khan - Wana, S.Waziristan"),
+              trailing: const Icon(Icons.arrow_forward_ios, size: 14),
+              onTap: () {
+                Navigator.pop(context);
+                Navigator.push(context, MaterialPageRoute(builder: (_) => const AboutPage()));
+              },
+            ),
+            const Divider(),
+            ListTile(
+              leading: const Icon(Icons.shield_outlined),
+              title: const Text("Ethical Use Only"),
+              subtitle: const Text("PECA 2016 Compliant - Own networks only"),
+            ),
+            ListTile(
+              leading: const Icon(Icons.privacy_tip_outlined),
+              title: const Text("Privacy Policy"),
+              subtitle: const Text("100% Offline - No data collected"),
+            ),
+          ],
+        ),
+      ),
       body: SafeArea(
         child: Column(
           children: [
@@ -102,7 +169,7 @@ class _ScanScreenState extends State<ScanScreen> {
                   child: Padding(
                     padding: EdgeInsets.all(24),
                     child: Text(
-                      'Scan nearby networks to review their security. Only audit networks you own or have permission to test.',
+                      'Scan nearby networks to review their security. Only audit networks you own or have permission to test.\n\nFrom Wana, South Waziristan - Built for technicians worldwide.',
                       textAlign: TextAlign.center,
                     ),
                   ),
